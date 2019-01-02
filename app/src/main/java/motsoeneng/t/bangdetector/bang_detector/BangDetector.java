@@ -10,14 +10,14 @@ public class BangDetector {
     private AudioRecord audioRecord;
     private AudioAmplitudeListener amplitudeListener = null;
     private Context context;
-    private static final int SAMPLE_RATE = 44100, AUDIO_CHANNEL = AudioFormat.CHANNEL_IN_MONO, AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
+    private static final int SAMPLE_RATE = 44100, AUDIO_CHANNEL = AudioFormat.CHANNEL_IN_DEFAULT, AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
     int bufferSize;
 
     public BangDetector(Context context) {
-        bufferSize = initRecordingBufferSize(4096);
+        bufferSize = initRecordingBufferSize();
         Log.i(this.getClass().getName(), "Buffer size: " + bufferSize);
         audioRecord = new AudioRecord.Builder()
-                .setAudioSource(MediaRecorder.AudioSource.MIC)
+                .setAudioSource(MediaRecorder.AudioSource.DEFAULT)
                 .setAudioFormat(new AudioFormat.Builder()
                         .setEncoding(AUDIO_ENCODING)
                         .setSampleRate(SAMPLE_RATE)
@@ -29,12 +29,8 @@ public class BangDetector {
     }
 
 
-    private int initRecordingBufferSize(int bufferSize) {
-        int size = AudioRecord.getMinBufferSize(SAMPLE_RATE, AUDIO_CHANNEL, AUDIO_ENCODING);
-        if (size > bufferSize) {
-            return size;
-        }
-        return bufferSize;
+    private int initRecordingBufferSize() {
+       return AudioRecord.getMinBufferSize(SAMPLE_RATE, AUDIO_CHANNEL, AUDIO_ENCODING);
     }
 
     public void start() throws BangDetectorException {
