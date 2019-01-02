@@ -12,7 +12,7 @@ public class AudioAmplitudeListener extends Thread {
     private boolean isRunning;
     private int maxAmplitude = 0;
     private Flashlight flashlight = null;
-    private int lastTap = 0;
+    private int tapCount = 0;
     private int bufferSize;
 
     AudioAmplitudeListener(AudioRecord audioRecord, int delay, int maxAmplitude, Context context, int bufferSize) throws AudioAmplitudeListenerException {
@@ -46,6 +46,7 @@ public class AudioAmplitudeListener extends Thread {
         try {
             int amplitude;
             int bytesRead;
+            int clickDelay = 1000;
             short[] buffer = new short[bufferSize];
             isRunning = true;
             Log.i(this.getClass().getName(), "Listener running ...");
@@ -53,7 +54,17 @@ public class AudioAmplitudeListener extends Thread {
                 bytesRead = audioRecord.read(buffer, 0, bufferSize);
                 amplitude = getAmplitude(buffer, bytesRead);
                 if (amplitude > maxAmplitude) {
-                    flashlight.toggle();
+                    if(delayCount > clickDelay){
+                        delayCount = 0;
+                        tapCount = 0;
+                    }
+                    tapCount++;
+                    if (tapCount >= 2 && delayCount < clickDelay) {
+                        flashlight.turnOn();
+                        tapCount = 0;
+                    } else {
+                        flashlight.turnOff();
+                    }
                     Log.i(getClass().getName(), "Audio read: Amp = " + amplitude);
                 }
                 delayCount += delay;
