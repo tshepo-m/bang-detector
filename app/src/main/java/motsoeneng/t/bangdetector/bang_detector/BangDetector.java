@@ -37,7 +37,7 @@ public class BangDetector {
         try {
             audioRecord.startRecording();
             Log.i(this.getClass().getName(), "Recorder started ...");
-            amplitudeListener = new AudioAmplitudeListener(audioRecord, 500, 10000, context, bufferSize);
+            amplitudeListener = new AudioAmplitudeListener(audioRecord, 100, 900000, context, bufferSize);
             amplitudeListener.start();
         } catch (AudioAmplitudeListenerException ex) {
             throw new BangDetectorException(ex.getMessage());
