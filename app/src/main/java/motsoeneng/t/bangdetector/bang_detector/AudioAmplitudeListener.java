@@ -31,7 +31,7 @@ public class AudioAmplitudeListener extends Thread {
     private int getAmplitude(short[] buffer, int bytesRead) {
         double sum = 0.0;
         double amplitude;
-        for(int i = 0; i < bytesRead; i++){
+        for (int i = 0; i < bytesRead; i++) {
             sum += buffer[i] * buffer[i];
         }
         amplitude = Math.abs(sum / bytesRead);
@@ -52,13 +52,16 @@ public class AudioAmplitudeListener extends Thread {
             do {
                 bytesRead = audioRecord.read(buffer, 0, bufferSize);
                 amplitude = getAmplitude(buffer, bytesRead);
-                Log.i(getClass().getName(), "Audio read: Amp = " + amplitude);
+                if (amplitude > maxAmplitude) {
+                    flashlight.toggle();
+                    Log.i(getClass().getName(), "Audio read: Amp = " + amplitude);
+                }
                 delayCount += delay;
                 sleep(delay);
             } while (isRunning);
             Log.i(this.getClass().getName(), " Exiting Listener");
             return;
-        } catch (InterruptedException ex) {
+        } catch (InterruptedException | FlashlightException ex) {
             throw new IllegalStateException(this.getClass().getName() + ": " + ex.getMessage());
         }
     }
