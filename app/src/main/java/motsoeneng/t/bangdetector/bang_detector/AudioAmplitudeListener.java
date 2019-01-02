@@ -20,6 +20,7 @@ public class AudioAmplitudeListener extends Thread {
         this.delay = delay;
         this.maxAmplitude = maxAmplitude;
         this.bufferSize = bufferSize;
+        Log.i(this.getClass().getName(), " BUFFER INIT: " + bufferSize);
         try {
             flashlight = new Flashlight(context);
         } catch (FlashlightException ex) {
@@ -27,12 +28,14 @@ public class AudioAmplitudeListener extends Thread {
         }
     }
 
-    private int calculateDecibel(byte[] buffer){
-        int sum = 0;
-        for(int i = 0; i < bufferSize; i++){
-            sum += Math.abs(buffer[i]);
+    private int getAmplitude(short[] buffer, int bytesRead) {
+        double sum = 0.0;
+        double amplitude;
+        for(int i = 0; i < bytesRead; i++){
+            sum += buffer[i] * buffer[i];
         }
-        return  sum / bufferSize;
+        amplitude = Math.abs(sum / bytesRead);
+        return (int) amplitude / 10;
     }
 
     public void stopMe() {
@@ -41,15 +44,15 @@ public class AudioAmplitudeListener extends Thread {
 
     public void run() throws IllegalStateException {
         try {
-            int decibel;
-            bufferSize = 512;
-            byte[] buffer = new byte[bufferSize];
+            int amplitude;
+            int bytesRead;
+            short[] buffer = new short[bufferSize];
             isRunning = true;
             Log.i(this.getClass().getName(), "Listener running ...");
             do {
-                audioRecord.read(buffer, 0, bufferSize);
-                decibel = calculateDecibel(buffer);
-                Log.i(getClass().getName(), "Audio read: Db = " + decibel);
+                bytesRead = audioRecord.read(buffer, 0, bufferSize);
+                amplitude = getAmplitude(buffer, bytesRead);
+                Log.i(getClass().getName(), "Audio read: Amp = " + amplitude);
                 delayCount += delay;
                 sleep(delay);
             } while (isRunning);
