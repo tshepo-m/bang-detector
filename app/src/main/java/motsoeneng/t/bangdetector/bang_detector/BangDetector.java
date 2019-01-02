@@ -1,39 +1,49 @@
 package motsoeneng.t.bangdetector.bang_detector;
 
 import android.content.Context;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.util.Log;
 
-import java.io.IOException;
-
 public class BangDetector {
-    private MediaRecorder recorder;
+    private AudioRecord audioRecord;
     private AudioAmplitudeListener amplitudeListener = null;
     private Context context;
-    public static final String STORAGE_DIRECTORY = "/sdcard/Audio/";
+    private static final int SAMPLE_RATE = 44100, AUDIO_CHANNEL = AudioFormat.CHANNEL_IN_MONO, AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
+    int bufferSize;
 
-    public BangDetector(String storagePath, Context context) {
-        recorder = new MediaRecorder();
-        recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
-        if (storagePath.isEmpty() || storagePath == null) {
-            storagePath = STORAGE_DIRECTORY + "bang_detector_rec.mp4";
-        }
-
-        Log.i(this.getClass().getName(), "Storage Path: " + storagePath);
-        recorder.setOutputFile(storagePath);
+    public BangDetector(Context context) {
+        bufferSize = initRecordingBufferSize(4096);
+        Log.i(this.getClass().getName(), "Buffer size: " + bufferSize);
+        audioRecord = new AudioRecord.Builder()
+                .setAudioSource(MediaRecorder.AudioSource.MIC)
+                .setAudioFormat(new AudioFormat.Builder()
+                        .setEncoding(AUDIO_ENCODING)
+                        .setSampleRate(SAMPLE_RATE)
+                        .setChannelMask(AUDIO_CHANNEL)
+                        .build())
+                .setBufferSizeInBytes(bufferSize)
+                .build();
         this.context = context;
+    }
+
+
+    private int initRecordingBufferSize(int bufferSize) {
+        int size = AudioRecord.getMinBufferSize(SAMPLE_RATE, AUDIO_CHANNEL, AUDIO_ENCODING);
+        if (size > bufferSize) {
+            return size;
+        }
+        return bufferSize;
     }
 
     public void start() throws BangDetectorException {
         try {
-            recorder.prepare();
-            recorder.start();
+            audioRecord.startRecording();
             Log.i(this.getClass().getName(), "Recorder started ...");
-            amplitudeListener = new AudioAmplitudeListener(recorder, 500, 10000, context);
+            amplitudeListener = new AudioAmplitudeListener(audioRecord, 500, 10000, context, bufferSize);
             amplitudeListener.start();
-        } catch (AudioAmplitudeListenerException | IOException ex) {
+        } catch (AudioAmplitudeListenerException ex) {
             throw new BangDetectorException(ex.getMessage());
         }
     }
@@ -42,9 +52,8 @@ public class BangDetector {
         if (amplitudeListener != null) {
             amplitudeListener.stopMe();
         }
-        recorder.stop();
-        recorder.reset();
-        recorder.release();
+        audioRecord.stop();
+        audioRecord.release();
         Log.i(this.getClass().getName(), "Recorder stopped.");
     }
 }
